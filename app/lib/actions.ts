@@ -5,6 +5,9 @@ import { z } from "zod";
 import { sql } from "@vercel/postgres";
 import { revalidatePath } from "@/node_modules/next/cache";
 import { redirect } from "@/node_modules/next/navigation";
+import { signIn } from '@/auth';
+import { AuthError } from "next-auth";
+
 
 const FormSchema = z.object({
     id: z.string(),
@@ -31,6 +34,8 @@ export type State = {
   };
   message?: string | null;
 }
+
+
 export async function createInvoice(prevState: State, formData: FormData) {
  
     const validatedFields  = CreateInvoice.safeParse({
@@ -112,4 +117,24 @@ export async function deleteInvoice(id: string){
       } catch (error) {
         return { message: 'Database Error: Failed to Delete Invoice.' };
       }
+}
+
+export async function authenticate(
+  prevState: string | undefined,
+  formData: FormData,
+) {
+  try {
+    console.log('test', formData);
+    await signIn('credentials', formData);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case 'CredentialsSignin':
+          return 'Invalid credentials.';
+        default:
+          return 'Something went wrong.';
+      }
+    }
+    throw error;
+  }
 }
